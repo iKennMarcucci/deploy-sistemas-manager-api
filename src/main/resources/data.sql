@@ -1,18 +1,18 @@
---Creamos la tabla roles si no existe
+-- Creamos la tabla roles si no existe
 CREATE TABLE IF NOT EXISTS roles (
     id INT NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(50) NOT NULL,
     PRIMARY KEY (id)
 );
 
---Insertamos los roles en el sistema si estos no existen
+-- Insertamos los roles en el sistema si estos no existen
 INSERT IGNORE INTO roles (id, nombre) VALUES 
-(1, 'Estudiante'),
-(2, 'Docente'),
-(3, 'Director'),
-(4, 'Jurado');
+    (1, 'Estudiante'),
+    (2, 'Docente'),
+    (3, 'Director'),
+    (4, 'Jurado');
 
---Creamos la tabla admins si no existe
+-- Creamos la tabla admins si no existe
 CREATE TABLE IF NOT EXISTS admins (
     id INT NOT NULL AUTO_INCREMENT,
     primer_nombre VARCHAR(50) NOT NULL,
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS admins (
     activo BOOLEAN NOT NULL,
     PRIMARY KEY (id)
 );
---Insertamos los usuarios en el sistema si estos no existen
 
+-- Insertamos los usuarios en el sistema si estos no existen
 INSERT IGNORE INTO admins (
     id,
     primer_nombre, 
@@ -49,13 +49,13 @@ INSERT IGNORE INTO admins (
     true
 );
 
-
 -- Creamos la tabla de semestres si no existe
 CREATE TABLE IF NOT EXISTS semestres (
     id INT NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(50) NOT NULL,
     numero INT NOT NULL,
-    numeroRomano VARCHAR(50) NOT NULL
+    numeroRomano VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
 );
 
 -- Insertamos los semestres en el sistema si estos no existen
@@ -71,63 +71,65 @@ VALUES
     (8, 'Semestre VIII', 8, 'VIII'),
     (9, 'Semestre IX', 9, 'IX'),
     (10, 'Semestre X', 10, 'X');
-    
 
---Creamos la tabla de estados de estudiantes si no existe
+-- Creamos la tabla de estados de estudiantes si no existe
 CREATE TABLE IF NOT EXISTS estados_estudiantes (
     id INT NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(255) NOT NULL,
     PRIMARY KEY (id)
 );
 
---Insertamos los estados de estudiantes en el sistema si estos no existen
+-- Insertamos los estados de estudiantes en el sistema si estos no existen
 INSERT IGNORE INTO estados_estudiantes (id, nombre) VALUES 
-(1, 'En curso'),
-(2, 'Inactivo'),
-(3, 'Egresado');
+    (1, 'En curso'),
+    (2, 'Inactivo'),
+    (3, 'Egresado');
 
---Creamos la tabla de estados de la matricula de estudiantes en el sistema
-CREATE TABLE  IF NOT EXISTS estados_matriculas (
-    id INTEGER NOT NULL AUTO_INCREMENT,
+-- Creamos la tabla de estados de la matrícula de estudiantes en el sistema
+CREATE TABLE IF NOT EXISTS estados_matriculas (
+    id INT NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(255) NOT NULL,
     PRIMARY KEY (id)
 );
 
---Insertamos los estados de la matricula de estudiantes en el sistema si estos no existen
+-- Insertamos los estados de la matrícula de estudiantes en el sistema si estos no existen
 INSERT IGNORE INTO estados_matriculas (id, nombre) VALUES 
-(1, 'Aprobada'),
-(2, 'En curso'),
-(3, 'Cancelada'),
-(4, 'Reprobada'),
-(5, 'Anulada'),
-(6, 'Correo enviado');
+    (1, 'Aprobada'),
+    (2, 'En curso'),
+    (3, 'Cancelada'),
+    (4, 'Reprobada'),
+    (5, 'Anulada'),
+    (6, 'Correo enviado');
 
+-- Creamos la tabla tipos_solicitudes si no existe
 CREATE TABLE IF NOT EXISTS tipos_solicitudes (
-    id INTEGER NOT NULL AUTO_INCREMENT,
+    id INT NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(255) NOT NULL,
     PRIMARY KEY (id)
 );
 
+-- Insertamos los tipos de solicitudes en el sistema si estos no existen
 INSERT IGNORE INTO tipos_solicitudes (id, nombre) VALUES 
-(1, 'Cancelacion de materias'),
-(2, 'Aplazamiento de semestre'),
-(3, 'Reintegro');
+    (1, 'Cancelacion de materias'),
+    (2, 'Aplazamiento de semestre'),
+    (3, 'Reintegro');
 
-
+-- Creamos la tabla tipos_contraprestaciones si no existe
 CREATE TABLE IF NOT EXISTS tipos_contraprestaciones (
-    id INTEGER NOT NULL AUTO_INCREMENT,
+    id INT NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(255) NOT NULL,
     porcentaje VARCHAR(255) NOT NULL,
     PRIMARY KEY (id)
 );
 
+-- Insertamos los tipos de contraprestaciones en el sistema si estos no existen
 INSERT IGNORE INTO tipos_contraprestaciones (id, nombre, porcentaje) VALUES 
-(1, 'Tesis Laureada', '50%'),
-(2, 'Tesis Meritoria', '30%'),
-(3, 'Medalla en Plata', '30%'),
-(4, 'Matricula de Honor', '50%');
+    (1, 'Tesis Laureada', '50%'),
+    (2, 'Tesis Meritoria', '30%'),
+    (3, 'Medalla en Plata', '30%'),
+    (4, 'Matricula de Honor', '50%');
 
---Creamos la tabla de tipos de programa si no existe
+-- Creamos la tabla tipos_programas si no existe
 CREATE TABLE IF NOT EXISTS tipos_programas (
     id INT NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(50) NOT NULL,
@@ -135,7 +137,8 @@ CREATE TABLE IF NOT EXISTS tipos_programas (
     PRIMARY KEY (id)
 );
 
---Insertamos los tipos de programas en el sistema si estos no existen
-INSERT IGNORE INTO tipos_programas(id, nombre, moodle_id) VALUES
-(1, 'Tecnologia','307'),
-(2, 'Maestria', '306')
+-- Insertamos los tipos de programas en el sistema si estos no existen
+INSERT IGNORE INTO tipos_programas (id, nombre, moodle_id) VALUES
+    (1, 'Tecnologia', '307'),
+    (2, 'Maestria', '306');
+
