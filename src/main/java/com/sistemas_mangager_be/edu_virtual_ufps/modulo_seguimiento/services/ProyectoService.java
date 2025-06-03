@@ -1,5 +1,7 @@
 package com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.services;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.sistemas_mangager_be.edu_virtual_ufps.entities.Rol;
 import com.sistemas_mangager_be.edu_virtual_ufps.entities.Usuario;
 import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.dtos.*;
@@ -14,6 +16,7 @@ import com.sistemas_mangager_be.edu_virtual_ufps.repositories.RolRepository;
 import com.sistemas_mangager_be.edu_virtual_ufps.repositories.UsuarioRepository;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +50,11 @@ public class ProyectoService {
     private final SustentacionEvaluadorRepository sustentacionEvaluadorRepository;
 
     private final GenerarDocumentosService generarDocumentosService;
+    private final MetaODSRepository metaODSRepository;
+
+    private final AmazonS3 amazonS3Client;
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucketName;
 
 
     @Autowired
@@ -57,7 +66,8 @@ public class ProyectoService {
                            ObjetivoEspecificoMapper objetivoEspecificoMapper, DefinitivaMapper definitivaMapper,
                            DefinitivaRepository definitivaRepository,
                            SustentacionRepository sustentacionRepository,
-                           SustentacionEvaluadorRepository sustentacionEvaluadorRepository, GenerarDocumentosService generarDocumentosService) {
+                           SustentacionEvaluadorRepository sustentacionEvaluadorRepository, GenerarDocumentosService generarDocumentosService,
+                           MetaODSRepository metaODSRepository, AmazonS3 amazonS3Client) {
         this.proyectoRepository = proyectoRepository;
         this.usuarioProyectoRepository = usuarioProyectoRepository;
         this.lineaInvestigacionRepository = lineaInvestigacionRepository;
@@ -74,6 +84,8 @@ public class ProyectoService {
         this.sustentacionRepository = sustentacionRepository;
         this.sustentacionEvaluadorRepository = sustentacionEvaluadorRepository;
         this.generarDocumentosService = generarDocumentosService;
+        this.metaODSRepository = metaODSRepository;
+        this.amazonS3Client = amazonS3Client;
     }
 
     @Transactional
@@ -95,8 +107,14 @@ public class ProyectoService {
                     .orElseThrow(() -> new RuntimeException("Línea de investigación no encontrada"));
         }
 
+        List<MetaODS> metaODSList = proyectoDto.getMetaODS().stream()
+                .map(dto -> metaODSRepository.findById(dto.getId())
+                        .orElseThrow(() -> new RuntimeException("MetaODS no encontrada con ID: " + dto.getId())))
+                .toList();
+
         Proyecto proyecto = proyectoMapper.toEntity(proyectoDto);
         proyecto.setLineaInvestigacion(lineaInvestigacion);
+        proyecto.setMetaODS(metaODSList);
         proyecto.setCreatedAt(LocalDate.now());
         proyecto.setUpdatedAt(LocalDate.now());
         Proyecto guardado = proyectoRepository.save(proyecto);
@@ -258,7 +276,7 @@ public class ProyectoService {
                     boolean todosEvaluados = existente.getObjetivosEspecificos().stream()
                             .allMatch(obj -> {
                                 EvaluacionObjetivo eval = obj.getEvaluacion();
-                                return eval != null && eval.isDirector() && eval.isCodirector();
+                                return eval != null && Boolean.TRUE.equals(eval.getDirector())  && Boolean.TRUE.equals(eval.getCodirector());
                             });
 
                     if (!todosEvaluados) {
@@ -368,25 +386,33 @@ public class ProyectoService {
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
 
+        Proyecto proyecto;
+
         if (isAdmin) {
-            if (!proyectoRepository.existsById(id)) {
-                throw new RuntimeException("Proyecto no encontrado");
-            }
-            proyectoRepository.deleteById(id);
+            proyecto = proyectoRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
         } else {
             Usuario activo = usuarioRepository.findByEmail(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
             if (activo.getRolId().getNombre().equals("Estudiante")) {
-                Proyecto proyecto = usuarioProyectoRepository.findProyectoByEstudianteId(activo.getId())
+                proyecto = usuarioProyectoRepository.findProyectoByEstudianteId(activo.getId())
                         .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
 
                 if (!proyecto.getId().equals(id)) {
                     throw new RuntimeException("No tienes permiso para eliminar este proyecto.");
                 }
-                proyectoRepository.deleteById(proyecto.getId());
+            } else {
+                throw new RuntimeException("No tienes permiso para eliminar este proyecto.");
             }
         }
+
+        if (proyecto.getDocumentos() != null) {
+            for (Documento doc : proyecto.getDocumentos()) {
+                amazonS3Client.deleteObject(new DeleteObjectRequest(bucketName, doc.getPath()));
+            }
+        }
+        proyectoRepository.delete(proyecto);
     }
 
     @Transactional
@@ -493,5 +519,85 @@ public class ProyectoService {
                     lineasDto
             );
         }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_SUPERADMIN') or hasAuthority('ROLE_ADMIN')")
+    public ProyectoDto importarProyecto(ProyectoDto proyectoDto) {
+
+        Optional<UsuarioProyectoDto> estudianteAsignadoOpt = proyectoDto.getUsuariosAsignados().stream()
+                .filter(asignado -> asignado.getRol() != null && "Estudiante".equals(asignado.getRol().getNombre()))
+                .findFirst();
+
+        if (estudianteAsignadoOpt.isEmpty()) {
+            throw new RuntimeException("No se ha asignado un estudiante al proyecto");
+        }
+
+        Integer idEstudiante = estudianteAsignadoOpt.get().getIdUsuario();
+
+        Usuario estudiante = usuarioRepository.findById(idEstudiante)
+                .orElseThrow(() -> new RuntimeException("Usuario estudiante no encontrado"));
+
+        boolean yaTieneProyecto = usuarioProyectoRepository.existsByUsuarioIdAndRolNombre(estudiante.getId(), "Estudiante");
+        if (yaTieneProyecto) {
+            throw new RuntimeException("El estudiante ya tiene un proyecto asignado");
+        }
+
+        LineaInvestigacion lineaInvestigacion = null;
+        if (proyectoDto.getLineaInvestigacion() != null && proyectoDto.getLineaInvestigacion().getId() != null) {
+            lineaInvestigacion = lineaInvestigacionRepository
+                    .findById(proyectoDto.getLineaInvestigacion().getId())
+                    .orElseThrow(() -> new RuntimeException("Línea de investigación no encontrada"));
+        }
+
+        List<MetaODS> metaODSList = proyectoDto.getMetaODS().stream()
+                .map(dto -> metaODSRepository.findById(dto.getId())
+                        .orElseThrow(() -> new RuntimeException("MetaODS no encontrada con ID: " + dto.getId())))
+                .toList();
+
+        List<UsuarioProyectoDto> usuariosAsignadosDto = proyectoDto.getUsuariosAsignados();
+        proyectoDto.setUsuariosAsignados(null);
+
+        Proyecto proyecto = proyectoMapper.toEntity(proyectoDto);
+        proyecto.setLineaInvestigacion(lineaInvestigacion);
+        proyecto.setMetaODS(metaODSList);
+        proyecto.setCreatedAt(LocalDate.now());
+        proyecto.setUpdatedAt(LocalDate.now());
+        Proyecto guardado = proyectoRepository.save(proyecto);
+
+        for(UsuarioProyectoDto u : usuariosAsignadosDto){
+            Usuario usuario = usuarioRepository.findById(u.getIdUsuario())
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + u.getIdUsuario()));
+
+            UsuarioProyecto usuarioProyecto = new UsuarioProyecto();
+            usuarioProyecto.setIdUsuario(usuario.getId());
+            usuarioProyecto.setIdProyecto(guardado.getId());
+            usuarioProyecto.setUsuario(usuario);
+            usuarioProyecto.setProyecto(guardado);
+            usuarioProyecto.setRol(u.getRol());
+
+            usuarioProyectoRepository.save(usuarioProyecto);
+        }
+
+        ProyectoDto proyectoGuardadoDto = proyectoMapper.toDto(guardado);
+        List<UsuarioProyecto> asignaciones = usuarioProyectoRepository.findByIdProyecto(proyectoGuardadoDto.getId());
+
+        List<UsuarioProyectoDto> usuarios = asignaciones.stream()
+                .map(asignacion -> {
+                    Usuario usuario = asignacion.getUsuario();
+                    return new UsuarioProyectoDto(
+                            asignacion.getIdUsuario(),
+                            asignacion.getIdProyecto(),
+                            asignacion.getRol(),
+                            usuario.getNombreCompleto(),
+                            usuario.getFotoUrl(),
+                            usuario.getEmail(),
+                            usuario.getTelefono()
+                    );
+                })
+                .collect(Collectors.toList());
+
+        proyectoGuardadoDto.setUsuariosAsignados(usuarios);
+        return proyectoGuardadoDto;
     }
 }

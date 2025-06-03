@@ -22,6 +22,7 @@ public class RetroalimentacionDto implements Serializable {
     private Integer usuarioId;
     private Integer documentoId;
 
+    private String emailUsuario;
     private String nombreUsuario;
     private String fotoUsuario;
 }

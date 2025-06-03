@@ -1,17 +1,18 @@
 package com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.dtos;
 
-import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
-@Embeddable
+/**
+ * DTO for {@link com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.entities.MetaODS}
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class EvaluacionObjetivo implements Serializable {
-    private Boolean director;
-    private Boolean codirector;
+public class MetaODSDto implements Serializable {
+    private Integer id;
+    private String nombre;
 }

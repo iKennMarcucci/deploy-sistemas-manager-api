@@ -8,6 +8,4 @@ import com.sistemas_mangager_be.edu_virtual_ufps.oracle.entities.ProfesorOracle;
 
 public interface ProfesorOracleRepository extends JpaRepository<ProfesorOracle, String> {
     List<ProfesorOracle> findByCodProfesor(String codProfesor);
-
-    
 }

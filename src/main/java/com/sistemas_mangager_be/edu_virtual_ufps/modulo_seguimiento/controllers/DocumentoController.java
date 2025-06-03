@@ -1,6 +1,7 @@
 package com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.controllers;
 
 import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.dtos.DocumentoDto;
+import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.dtos.DocumentoUploadDto;
 import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.dtos.RetroalimentacionDto;
 import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.entities.enums.TipoDocumento;
 import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.services.DocumentoService;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -84,5 +86,29 @@ public class DocumentoController {
     public ResponseEntity<Void> eliminarRetroalimentacion(@PathVariable Integer id) {
         documentoService.eliminarRetroalimentacion(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/importar-a-proyecto/{idProyecto}")
+    public ResponseEntity<List<DocumentoDto>> importarDocumento(
+            @PathVariable Integer idProyecto,
+            @RequestParam("archivos") List<MultipartFile> archivos,
+            @RequestParam("tipoDocumentos") List<TipoDocumento> tipoDocumentos,
+            @RequestParam("tags") List<String> tags) {
+
+        if (archivos.size() != tipoDocumentos.size() || archivos.size() != tags.size()) {
+            throw new RuntimeException("El número de archivos, tipos de documento y tags debe coincidir");
+        }
+
+        List<DocumentoUploadDto> documentosUpload = new ArrayList<>();
+        for (int i = 0; i < archivos.size(); i++) {
+            DocumentoUploadDto dto = new DocumentoUploadDto();
+            dto.setArchivo(archivos.get(i));
+            dto.setTipoDocumento(tipoDocumentos.get(i));
+            dto.setTag(tags.get(i));
+            documentosUpload.add(dto);
+        }
+
+        List<DocumentoDto> resultado = documentoService.guardarDocumentos(idProyecto, documentosUpload);
+        return ResponseEntity.ok(resultado);
     }
 }

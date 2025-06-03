@@ -15,6 +15,7 @@ public interface RetroalimentacionMapper {
     @Mapping(target = "documentoId", source = "documento.id")
     @Mapping(target = "nombreUsuario", source = "usuario.nombreCompleto")
     @Mapping(target = "fotoUsuario", source = "usuario.fotoUrl")
+    @Mapping(target = "emailUsuario", source = "usuario.email")
     RetroalimentacionDto toDto(Retroalimentacion retroalimentacion);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

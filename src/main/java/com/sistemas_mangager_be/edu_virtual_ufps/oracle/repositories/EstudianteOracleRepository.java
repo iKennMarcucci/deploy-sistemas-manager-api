@@ -13,7 +13,4 @@ public interface EstudianteOracleRepository extends JpaRepository<EstudianteOrac
 
     List<EstudianteOracle> findByCodigoStartingWith(String codigo);
 
-    List<EstudianteOracle> findByCodigo(String codigo);
-    
-
 }

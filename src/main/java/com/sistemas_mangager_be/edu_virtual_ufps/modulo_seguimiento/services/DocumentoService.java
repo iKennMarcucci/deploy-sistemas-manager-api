@@ -7,6 +7,7 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.sistemas_mangager_be.edu_virtual_ufps.entities.Usuario;
 import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.dtos.DocumentoDto;
+import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.dtos.DocumentoUploadDto;
 import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.dtos.RetroalimentacionDto;
 import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.entities.Documento;
 import com.sistemas_mangager_be.edu_virtual_ufps.modulo_seguimiento.entities.Proyecto;
@@ -31,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -84,13 +86,13 @@ public class DocumentoService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_ESTUDIANTE')")
+    @PreAuthorize("hasAuthority('ROLE_ESTUDIANTE') or hasAuthority('ROLE_DOCENTE') or hasAuthority('ROLE_SUPERADMIN') or hasAuthority('ROLE_ADMIN')")
     public DocumentoDto guardarDocumento(Integer idProyecto, MultipartFile archivo, TipoDocumento tipoDocumento, String tag) {
         Proyecto proyecto = proyectoRepository.findById(idProyecto)
                 .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
 
         try {
-            String fileName = UUID.randomUUID() + "_" + archivo.getOriginalFilename();
+            String fileName = "seguimiento/" + UUID.randomUUID() + "_" + archivo.getOriginalFilename();
 
             amazonS3Client.putObject(bucketName, fileName, archivo.getInputStream(), null);
 
@@ -115,7 +117,7 @@ public class DocumentoService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_ESTUDIANTE') or hasAuthority('ROLE_SUPERADMIN') or hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ESTUDIANTE') or hasAuthority('ROLE_DOCENTE') or hasAuthority('ROLE_SUPERADMIN') or hasAuthority('ROLE_ADMIN')")
     public void eliminarDocumento(Integer id) {
         Documento documento = documentoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Documento no encontrado"));
@@ -277,7 +279,7 @@ public class DocumentoService {
         Proyecto proyecto = proyectoRepository.findById(idProyecto)
                 .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
 
-        String s3FileName = UUID.randomUUID() + "_" + fileName;
+        String s3FileName = "seguimiento/" + UUID.randomUUID() + "_" + fileName;
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentType(contentType);
@@ -301,4 +303,50 @@ public class DocumentoService {
         documentoDto.setUrl(generarPresignedUrl(documentoDto.getPath(), 60));
         return documentoDto;
     }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_SUPERADMIN') or hasAuthority('ROLE_ADMIN')")
+    public List<DocumentoDto> guardarDocumentos(Integer idProyecto, List<DocumentoUploadDto> documentosUpload) {
+        Proyecto proyecto = proyectoRepository.findById(idProyecto)
+                .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
+
+        List<DocumentoDto> documentosGuardados = new ArrayList<>();
+
+        for (DocumentoUploadDto upload : documentosUpload) {
+            MultipartFile archivo = upload.getArchivo();
+            TipoDocumento tipoDocumento = upload.getTipoDocumento();
+            String tag = upload.getTag();
+
+            try {
+                String fileName = "seguimiento/" + UUID.randomUUID() + "_" + archivo.getOriginalFilename();
+
+                ObjectMetadata metadata = new ObjectMetadata();
+                metadata.setContentType(archivo.getContentType());
+                metadata.setContentLength(archivo.getSize());
+
+                amazonS3Client.putObject(bucketName, fileName, archivo.getInputStream(), metadata);
+
+                Documento documento = new Documento();
+                documento.setNombre(archivo.getOriginalFilename());
+                documento.setPath(fileName);
+                documento.setTipoArchivo(archivo.getContentType());
+                documento.setPeso(String.format("%.2f KB", archivo.getSize() / 1024.0));
+                documento.setTipoDocumento(tipoDocumento);
+                documento.setProyecto(proyecto);
+                documento.setTag(tag);
+
+                documentoRepository.save(documento);
+
+                DocumentoDto documentoDto = documentoMapper.toDto(documento);
+                documentoDto.setUrl(generarPresignedUrl(documentoDto.getPath(), 60));
+
+                documentosGuardados.add(documentoDto);
+            } catch (IOException e) {
+                throw new RuntimeException("Error al subir el archivo a S3: " + archivo.getOriginalFilename(), e);
+            }
+        }
+
+        return documentosGuardados;
+    }
+
 }

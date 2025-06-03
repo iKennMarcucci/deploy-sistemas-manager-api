@@ -15,7 +15,6 @@ public class EstudianteGrupoResponse {
     private String grupoCodigo;
     private String grupoCohorte;
     private Integer grupoCohorteId;
-    private String docenteNombre;
     private List<estudianteResponse> estudiantes;
 
     @Data

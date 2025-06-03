@@ -78,5 +78,10 @@ public class ProyectoController {
     public ResponseEntity<List<GruposYLineasInvestigacionDto>> obtenerLineasInvestigacionPorGrupo() {
         return ResponseEntity.ok(proyectoService.listarGruposConLineas());
     }
+
+    @PostMapping("/importar")
+    public ResponseEntity<ProyectoDto> importarProyectos(@RequestBody ProyectoDto proyecto) {
+        return ResponseEntity.ok(proyectoService.importarProyecto(proyecto));
+    }
 }
 

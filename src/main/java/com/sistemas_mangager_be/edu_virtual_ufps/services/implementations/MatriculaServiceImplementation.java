@@ -367,6 +367,7 @@ public class MatriculaServiceImplementation implements IMatriculaService {
                 // 6. Actualizar las matrículas para indicar que se envió el correo
                 EstadoMatricula estadoCorreoEnviado = estadoMatriculaRepository.findById(6)
                                 .orElseThrow(() -> new MatriculaException("Estado 'Correo enviado' no configurado"));
+                crearCambioEstadoMatricula(null, estadoCorreoEnviado, usuario);
                 Date ahora = new Date();
                 matriculas.forEach(matricula -> {
                         matricula.setCorreoEnviado(true);

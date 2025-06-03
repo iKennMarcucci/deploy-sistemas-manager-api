@@ -444,12 +444,11 @@ public class GrupoServiceImplementation implements IGrupoService {
         }).toList();
     }
 
-    public List<GrupoCohorteDocenteResponse> listarGruposCohortePorMateria(Integer materiaId)
-            throws MateriaNotFoundException {
+    public List<GrupoCohorteDocenteResponse> listarGruposCohortePorMateria(Integer materiaId) throws MateriaNotFoundException {
         Materia materia = materiaRepository.findById(materiaId)
                 .orElseThrow(() -> new MateriaNotFoundException(
                         String.format(IS_NOT_FOUND_F, "LA MATERIA CON ID " + materiaId).toLowerCase()));
-
+        
         List<GrupoCohorte> grupoCohorteDocentes = grupoCohorteRepository.findByGrupoId_MateriaId(materia);
 
         return grupoCohorteDocentes.stream().map(grupoCohorteDocente -> {
@@ -477,13 +476,12 @@ public class GrupoServiceImplementation implements IGrupoService {
         }).toList();
     }
 
-    public List<GrupoCohorteDocenteResponse> listarGruposPorPrograma(Integer programaId)
-            throws ProgramaNotFoundException {
+
+    public List<GrupoCohorteDocenteResponse> listarGruposPorPrograma (Integer programaId) throws ProgramaNotFoundException{
         Programa programa = programaRepository.findById(programaId)
                 .orElseThrow(() -> new ProgramaNotFoundException(
                         String.format(IS_NOT_FOUND_F, "EL PROGRAMA CON ID " + programaId).toLowerCase()));
-        List<GrupoCohorte> grupoCohorteDocentes = grupoCohorteRepository
-                .findByGrupoId_MateriaId_PensumId_ProgramaId(programa);
+        List<GrupoCohorte> grupoCohorteDocentes = grupoCohorteRepository.findByGrupoId_MateriaId_PensumId_ProgramaId(programa);
 
         return grupoCohorteDocentes.stream().map(grupoCohorteDocente -> {
             GrupoCohorteDocenteResponse grupoCohorteDocenteResponse = new GrupoCohorteDocenteResponse().builder()
@@ -509,7 +507,6 @@ public class GrupoServiceImplementation implements IGrupoService {
             return grupoCohorteDocenteResponse;
         }).toList();
     }
-
     public List<GrupoCohorteDocenteResponse> listarGruposPorDocente(Integer docenteId) throws UserNotFoundException {
         Usuario usuario = usuarioRepository.findById(docenteId)
                 .orElseThrow(() -> new UserNotFoundException(
@@ -610,18 +607,19 @@ public class GrupoServiceImplementation implements IGrupoService {
         GrupoCohorte grupoCohorte = grupoCohorteRepository.findById(grupoCohorteId)
                 .orElseThrow(() -> new RuntimeException("Grupo Cohorte no encontrado"));
 
+        
         String semestre = grupoCohorte.getSemestre();
         // 3. Obtener matrículas en curso para este grupo cohorte
-        List<Matricula> matriculas = matriculaRepository.findBySemestreAndGrupoCohorteIdAndEstados(semestre,
-                grupoCohorte); // 4. Construir la respuesta
+        List<Matricula> matriculas = matriculaRepository.findBySemestreAndGrupoCohorteIdAndEstados( semestre,
+                grupoCohorte);
+
+        // 4. Construir la respuesta
         return EstudianteGrupoResponse.builder()
                 .id(grupoCohorte.getId())
                 .grupoNombre(grupoCohorte.getGrupoId().getNombre())
                 .grupoCodigo(grupoCohorte.getGrupoId().getCodigo())
                 .grupoCohorte(grupoCohorte.getCohorteGrupoId().getNombre())
                 .grupoCohorteId(grupoCohorte.getCohorteGrupoId().getId())
-                .docenteNombre(
-                        grupoCohorte.getDocenteId() != null ? grupoCohorte.getDocenteId().getNombreCompleto() : null)
                 .estudiantes(matriculas.stream()
                         .map(matricula -> {
                             Estudiante e = matricula.getEstudianteId();
@@ -640,12 +638,12 @@ public class GrupoServiceImplementation implements IGrupoService {
     }
 
     private String calcularSemestre(Date fechaMatriculacion) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(fechaMatriculacion);
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(fechaMatriculacion);
 
-        int mes = cal.get(Calendar.MONTH) + 1; // Enero = 0
-        int anio = cal.get(Calendar.YEAR);
+                int mes = cal.get(Calendar.MONTH) + 1; // Enero = 0
+                int anio = cal.get(Calendar.YEAR);
 
-        return anio + "-" + (mes <= 6 ? "I" : "II");
-    }
+                return anio + "-" + (mes <= 6 ? "I" : "II");
+        }
 }

@@ -33,11 +33,6 @@ public class EstudianteOracleController {
         return estudianteOracleRepository.findAll();
     }
 
-    @GetMapping("/buscar/codigo")
-    public List<EstudianteOracle> buscarPorCodigo(@RequestParam String codigo) {
-        return estudianteOracleRepository.findByCodigo(codigo);
-    }
-
     @GetMapping("/sistemas")
     public List<EstudianteOracle> obtenerEstudiantesSistemas() {
         return estudianteOracleRepository.findByNomCarrera("INGENIERIA DE SISTEMAS");

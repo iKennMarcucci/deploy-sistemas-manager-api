@@ -1,7 +1,6 @@
 package com.sistemas_mangager_be.edu_virtual_ufps.controllers.oracle;
 
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sistemas_mangager_be.edu_virtual_ufps.oracle.entities.ProfesorOracle;
@@ -26,11 +25,6 @@ public class ProfesorOracleController {
     @GetMapping()
     public List<ProfesorOracle> obtenerTodos() {
         return profesorOracleRepository.findAll();
-    }
-
-    @GetMapping("/buscar/codigo")
-    public List<ProfesorOracle> buscarPorCodigo(@RequestParam String codProfesor) {
-        return profesorOracleRepository.findByCodProfesor(codProfesor);
     }
 
 }
