@@ -1,13 +1,15 @@
+version: "3.8"
+
 services:
   mysql-db:
-    image: mysql:8.0.33  # o la versión que prefieras
+    image: mysql:8.0.33
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: siav_ufps
       MYSQL_USER: user
       MYSQL_PASSWORD: 1234
-    ports: 
+    ports:
       - "3307:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -15,25 +17,29 @@ services:
       retries: 3
     restart: always
     volumes:
-        - mysql-data:/var/lib/mysql  # persistencia de datos
-        - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/data.sql  # carga de datos,
+      - mysql-data:/var/lib/mysql
+      - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/data.sql
 
   siav-ufps:
-    image: siav-ufps
     build:
-      context: .  # asume que tienes un Dockerfile en la raíz
+      context: .       # Busca el Dockerfile en la raíz del proyecto
+      dockerfile: Dockerfile
+    image: siav-ufps:latest
     container_name: siav-ufps-container
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/siav_ufps?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: 1234
       SERVER_PORT: 8080
-    restart: always
-    ports: 
+      SPRING_PROFILES_ACTIVE: prod
+      # Agrega aquí otras vars que uses en application-prod.properties:
+      # GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, AWS_ACCESS_KEY, AWS_SECRET_KEY, etc.
+    ports:
       - "8080:8080"
     depends_on:
       mysql-db:
         condition: service_healthy
+    restart: always
 
 volumes:
   mysql-data:
