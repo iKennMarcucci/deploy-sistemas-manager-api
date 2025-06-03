@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: edu-virtual-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        value: jdbc:mysql://your-db-host:3306/edu_virtual_ufps
+      - key: DATABASE_USER
+        value: your-db-user
+      - key: DATABASE_PASSWORD
+        value: your-db-password
+
+      - key: GOOGLE_CLIENT_ID
+        value: ${GOOGLE_CLIENT_ID}
+      - key: GOOGLE_CLIENT_SECRET
+        value: ${GOOGLE_CLIENT_SECRET}
+      - key: GOOGLE_REDIRECT_URI
+        value: https://your-domain.onrender.com/login/oauth2/code/google
+
+      - key: AWS_ACCESS_KEY
+        value: ${AWS_ACCESS_KEY}
+      - key: AWS_SECRET_KEY
+        value: ${AWS_SECRET_KEY}
+      - key: AWS_BUCKET
+        value: uvirtual
+
+      - key: MOODLE_API_URL
+        value: https://your-moodle-url.com/webservice/rest/server.php
+      - key: MOODLE_API_TOKEN
+        value: your-moodle-token
+
+      - key: EMAIL_USER
+        value: siredsesemillero@gmail.com
+      - key: EMAIL_PASS
+        value: vealdkonkysebazj
