@@ -1,7 +1,6 @@
 services:
   - type: web
     name: edu-virtual-backend
-    runtime: native
     plan: free
     buildCommand: ./mvnw clean install -DskipTests
     startCommand: java -jar target/edu_virtual_ufps-0.0.1-SNAPSHOT.jar
